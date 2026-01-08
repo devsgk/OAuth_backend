@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import path from "path";
+import fs from "fs";
 import authRoutes from "./routes/auth.routes";
 
 const app = express();
@@ -38,27 +39,40 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Resolve auth-ui paths
+const authUiDistPath = path.join(__dirname, "../auth-ui/dist");
+const authUiIndexPath = path.join(authUiDistPath, "index.html");
+const authUiAssetsPath = path.join(authUiDistPath, "assets");
+
+// Check if auth-ui is built
+if (!fs.existsSync(authUiIndexPath)) {
+  console.error(`❌ auth-ui not found at: ${authUiIndexPath}`);
+  console.error(`   Current __dirname: ${__dirname}`);
+  console.error(
+    `   Please ensure auth-ui is built before starting the server.`
+  );
+}
+
 // Serve auth-ui static assets (for both root and /oauth/authorize)
-app.use(
-  "/assets",
-  express.static(path.join(__dirname, "../auth-ui/dist/assets"))
-);
-app.use(
-  "/oauth/authorize/assets",
-  express.static(path.join(__dirname, "../auth-ui/dist/assets"))
-);
-app.use(
-  "/vite.svg",
-  express.static(path.join(__dirname, "../auth-ui/dist/vite.svg"))
-);
-app.use(
-  "/oauth/authorize/vite.svg",
-  express.static(path.join(__dirname, "../auth-ui/dist/vite.svg"))
-);
+if (fs.existsSync(authUiAssetsPath)) {
+  app.use("/assets", express.static(authUiAssetsPath));
+  app.use("/oauth/authorize/assets", express.static(authUiAssetsPath));
+  app.use("/vite.svg", express.static(path.join(authUiDistPath, "vite.svg")));
+  app.use(
+    "/oauth/authorize/vite.svg",
+    express.static(path.join(authUiDistPath, "vite.svg"))
+  );
+}
 
 // Root endpoint - serve login page
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "../auth-ui/dist/index.html"));
+  if (!fs.existsSync(authUiIndexPath)) {
+    return res.status(500).json({
+      error: "auth-ui not built",
+      message: "Please build auth-ui before deploying",
+    });
+  }
+  res.sendFile(authUiIndexPath);
 });
 
 // Health check endpoint
@@ -72,7 +86,13 @@ app.use("/oauth", authRoutes);
 // Serve auth-ui index.html for /oauth/authorize (with query params)
 // This must come after the API routes
 app.get("/oauth/authorize", (req, res) => {
-  res.sendFile(path.join(__dirname, "../auth-ui/dist/index.html"));
+  if (!fs.existsSync(authUiIndexPath)) {
+    return res.status(500).json({
+      error: "auth-ui not built",
+      message: "Please build auth-ui before deploying",
+    });
+  }
+  res.sendFile(authUiIndexPath);
 });
 
 // 404 handler

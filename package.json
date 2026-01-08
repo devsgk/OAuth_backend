@@ -5,7 +5,8 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
-    "build": "cd auth-ui && npm install && npm run build && cd .. && tsc",
+    "build": "cd auth-ui && npm install && npm run build && cd .. && npm run build:backend",
+    "build:ui": "cd auth-ui && npm install && npm run build",
     "build:backend": "tsc",
     "start": "node dist/server.js"
   },
