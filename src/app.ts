@@ -13,6 +13,7 @@ const allowedOrigins = [
   "http://localhost:3000",
   "http://localhost:3001",
   "https://client.devsgk.work", // Production frontend
+  "https://auth.devsgk.work", // Auth server (for auth-ui)
 ].filter(Boolean);
 
 const corsOptions = {
@@ -20,10 +21,24 @@ const corsOptions = {
     origin: string | undefined,
     callback: (err: Error | null, allow?: boolean) => void
   ) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) {
       return callback(null, true);
     }
 
+    // Allow same-origin requests (auth-ui served from same domain)
+    const requestUrl = new URL(origin);
+    const serverUrl = process.env.AUTH_SERVER_URL || `https://auth.devsgk.work`;
+    try {
+      const serverUrlObj = new URL(serverUrl);
+      if (requestUrl.hostname === serverUrlObj.hostname) {
+        return callback(null, true);
+      }
+    } catch (e) {
+      // Ignore URL parsing errors
+    }
+
+    // Check allowed origins list
     if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
