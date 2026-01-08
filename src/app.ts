@@ -39,6 +39,20 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/oauth/authorize/assets', express.static(path.join(__dirname, '../auth-ui/dist/assets')));
 app.use('/oauth/authorize/vite.svg', express.static(path.join(__dirname, '../auth-ui/dist/vite.svg')));
 
+// Root endpoint
+app.get('/', (req, res) => {
+  res.json({ 
+    service: 'OAuth 2.0 Authorization Server',
+    status: 'running',
+    endpoints: {
+      health: '/health',
+      authorize: '/oauth/authorize',
+      token: '/oauth/token',
+      userInfo: '/oauth/me'
+    }
+  });
+});
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
