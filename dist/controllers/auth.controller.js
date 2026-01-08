@@ -33,6 +33,8 @@ async function initDemoData() {
             name: 'Frontend Application',
             redirectUris: [
                 'http://localhost:5173/callback',
+                'http://localhost:5174/callback',
+                'http://localhost:5175/callback',
                 'http://localhost:3000/callback',
                 process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL}/callback` : ''
             ].filter(Boolean)

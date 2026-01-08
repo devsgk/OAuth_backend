@@ -37,18 +37,35 @@ const corsOptions = {
 app.use((0, cors_1.default)(corsOptions));
 app.use(express_1.default.json());
 app.use(express_1.default.urlencoded({ extended: true }));
-// Resolve auth-ui paths
-const authUiDistPath = path_1.default.join(__dirname, "../auth-ui/dist");
-const authUiIndexPath = path_1.default.join(authUiDistPath, "index.html");
-const authUiAssetsPath = path_1.default.join(authUiDistPath, "assets");
-// Check if auth-ui is built
-if (!fs_1.default.existsSync(authUiIndexPath)) {
-    console.error(`❌ auth-ui not found at: ${authUiIndexPath}`);
+// Resolve auth-ui paths - try multiple possible locations
+// Render: Root Directory is "backend", so paths are relative to backend folder
+const possiblePaths = [
+    path_1.default.join(__dirname, "../auth-ui/dist"), // Relative to dist folder
+    path_1.default.join(process.cwd(), "auth-ui/dist"), // Relative to current working directory
+    path_1.default.join(process.cwd(), "../auth-ui/dist"), // One level up
+];
+let authUiDistPath = null;
+let authUiIndexPath = null;
+let authUiAssetsPath = null;
+// Find the correct path
+for (const possiblePath of possiblePaths) {
+    const indexPath = path_1.default.join(possiblePath, "index.html");
+    if (fs_1.default.existsSync(indexPath)) {
+        authUiDistPath = possiblePath;
+        authUiIndexPath = indexPath;
+        authUiAssetsPath = path_1.default.join(possiblePath, "assets");
+        console.log(`✅ Found auth-ui at: ${authUiDistPath}`);
+        break;
+    }
+}
+if (!authUiDistPath) {
+    console.error(`❌ auth-ui not found. Tried paths:`);
+    possiblePaths.forEach((p) => console.error(`   - ${p}`));
     console.error(`   Current __dirname: ${__dirname}`);
-    console.error(`   Please ensure auth-ui is built before starting the server.`);
+    console.error(`   Current process.cwd(): ${process.cwd()}`);
 }
 // Serve auth-ui static assets (for both root and /oauth/authorize)
-if (fs_1.default.existsSync(authUiAssetsPath)) {
+if (authUiAssetsPath && fs_1.default.existsSync(authUiAssetsPath)) {
     app.use("/assets", express_1.default.static(authUiAssetsPath));
     app.use("/oauth/authorize/assets", express_1.default.static(authUiAssetsPath));
     app.use("/vite.svg", express_1.default.static(path_1.default.join(authUiDistPath, "vite.svg")));
@@ -56,13 +73,13 @@ if (fs_1.default.existsSync(authUiAssetsPath)) {
 }
 // Root endpoint - serve login page
 app.get("/", (req, res) => {
-    if (!fs_1.default.existsSync(authUiIndexPath)) {
-        console.error(`auth-ui index.html not found at: ${authUiIndexPath}`);
+    if (!authUiIndexPath || !fs_1.default.existsSync(authUiIndexPath)) {
         return res.status(500).json({
             error: "auth-ui not built",
             message: "Please build auth-ui before deploying",
-            path: authUiIndexPath,
-            __dirname: __dirname
+            triedPaths: possiblePaths,
+            __dirname: __dirname,
+            cwd: process.cwd(),
         });
     }
     res.sendFile(path_1.default.resolve(authUiIndexPath));
@@ -76,13 +93,13 @@ app.use("/oauth", auth_routes_1.default);
 // Serve auth-ui index.html for /oauth/authorize (with query params)
 // This must come after the API routes
 app.get("/oauth/authorize", (req, res) => {
-    if (!fs_1.default.existsSync(authUiIndexPath)) {
-        console.error(`auth-ui index.html not found at: ${authUiIndexPath}`);
+    if (!authUiIndexPath || !fs_1.default.existsSync(authUiIndexPath)) {
         return res.status(500).json({
             error: "auth-ui not built",
             message: "Please build auth-ui before deploying",
-            path: authUiIndexPath,
-            __dirname: __dirname
+            triedPaths: possiblePaths,
+            __dirname: __dirname,
+            cwd: process.cwd(),
         });
     }
     res.sendFile(path_1.default.resolve(authUiIndexPath));
