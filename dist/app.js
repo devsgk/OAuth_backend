@@ -15,6 +15,7 @@ const allowedOrigins = [
     "http://localhost:5173",
     "http://localhost:3000",
     "http://localhost:3001",
+    "https://client.devsgk.work", // Production frontend
 ].filter(Boolean);
 const corsOptions = {
     origin: (origin, callback) => {
@@ -56,12 +57,15 @@ if (fs_1.default.existsSync(authUiAssetsPath)) {
 // Root endpoint - serve login page
 app.get("/", (req, res) => {
     if (!fs_1.default.existsSync(authUiIndexPath)) {
+        console.error(`auth-ui index.html not found at: ${authUiIndexPath}`);
         return res.status(500).json({
             error: "auth-ui not built",
             message: "Please build auth-ui before deploying",
+            path: authUiIndexPath,
+            __dirname: __dirname
         });
     }
-    res.sendFile(authUiIndexPath);
+    res.sendFile(path_1.default.resolve(authUiIndexPath));
 });
 // Health check endpoint
 app.get("/health", (req, res) => {
@@ -73,12 +77,15 @@ app.use("/oauth", auth_routes_1.default);
 // This must come after the API routes
 app.get("/oauth/authorize", (req, res) => {
     if (!fs_1.default.existsSync(authUiIndexPath)) {
+        console.error(`auth-ui index.html not found at: ${authUiIndexPath}`);
         return res.status(500).json({
             error: "auth-ui not built",
             message: "Please build auth-ui before deploying",
+            path: authUiIndexPath,
+            __dirname: __dirname
         });
     }
-    res.sendFile(authUiIndexPath);
+    res.sendFile(path_1.default.resolve(authUiIndexPath));
 });
 // 404 handler
 app.use((req, res) => {
