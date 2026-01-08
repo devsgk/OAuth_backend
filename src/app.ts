@@ -38,28 +38,27 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve auth-ui static assets
+// Serve auth-ui static assets (for both root and /oauth/authorize)
+app.use(
+  "/assets",
+  express.static(path.join(__dirname, "../auth-ui/dist/assets"))
+);
 app.use(
   "/oauth/authorize/assets",
   express.static(path.join(__dirname, "../auth-ui/dist/assets"))
+);
+app.use(
+  "/vite.svg",
+  express.static(path.join(__dirname, "../auth-ui/dist/vite.svg"))
 );
 app.use(
   "/oauth/authorize/vite.svg",
   express.static(path.join(__dirname, "../auth-ui/dist/vite.svg"))
 );
 
-// Root endpoint
+// Root endpoint - serve login page
 app.get("/", (req, res) => {
-  res.json({
-    service: "OAuth 2.0 Authorization Server",
-    status: "running",
-    endpoints: {
-      health: "/health",
-      authorize: "/oauth/authorize",
-      token: "/oauth/token",
-      userInfo: "/oauth/me",
-    },
-  });
+  res.sendFile(path.join(__dirname, "../auth-ui/dist/index.html"));
 });
 
 // Health check endpoint
